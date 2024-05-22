@@ -14,6 +14,8 @@
 #include "server.h"
 #include "simulator.h"
 #include <thread>
+#include <functional>
+#include <atomic>
 
 /**
  * @brief Main function to start the simulation and communication server.
@@ -25,20 +27,39 @@
  * @return 0 on successful completion.
  */
 
+// simple RAII thread wrapper just to retain authenticity with original, since clang on Mac does not support std::jthread :(
+class JThread {
+public:
+  explicit inline JThread(const auto& func) {
+    m_Thread = std::move(std::thread(func));
+  }
+
+  inline void Join(void) {
+    if (!m_DidJoin.exchange(true))
+        m_Thread.join();
+  }
+
+  inline ~JThread() {
+     Join();
+  }
+
+  inline JThread(const JThread&) = delete;
+  inline JThread(JThread&&) = delete;
+  inline JThread& operator=(const JThread&) = delete;
+  inline JThread& operator=(JThread&&) = delete;
+
+private:
+   std::thread m_Thread;
+   std::atomic<bool> m_DidJoin{ false };
+};
+
 int main() {
 
   Simulator sim;        ///< Simulator object
   CommServer comm(sim); ///< Communication server object with simulator object
 
-  std::jthread sim_thread(&Simulator::run_simulator,
-                          std::ref(sim)); ///< Start the simulation thread
-
-  std::jthread comm_thread(
-      &CommServer::start_server,
-      std::ref(comm)); ///< Start the communication server thread
-
-  sim_thread.join();
-  comm_thread.join(); ///< Wait for the threads to finish
+  JThread sim_thread([&]() -> void { sim.run_simulator(); });
+  JThread comm_thread([&]() -> void { comm.start_server(); });
 
   return 0;
 }
