@@ -15,7 +15,7 @@
 #include "controller.h"
 #include <chrono>
 #include <cmath>
-#include <experimental/random>
+#include <random>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -44,7 +44,7 @@ void Simulator::run_simulator() {
       /// circular buffer
       ///@todo Make sure delay index is within bounds of buffer size
 
-      error = m_params.ref_angle - theta.at(delay_index);
+      error = m_params.GetRefAngle() - theta.at(delay_index);
       F = m_controller->output(-error);
 
       // new values for theata based on state of last time step
@@ -98,6 +98,10 @@ void Simulator::reset_simulator() {
   x_dot = {0, 0};
   x_dot_dot = {0, 0};
 }
-void Simulator::update_params(double ref = 0, int delay = 0, int jitter = 0) {
+void Simulator::update_params(double ref = 0, int delay = 0, int jitter = 0, double ref_rad_offset = 0) {
   ///@todo Implement update_params function to update simulation parameters
+  m_params.ref_angle = ref;
+  m_params.delay = delay;
+  m_params.jitter = jitter;
+  m_params.ref_angle_rad_offset = ref_rad_offset;
 }
