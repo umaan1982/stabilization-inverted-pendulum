@@ -32,7 +32,12 @@ void CommServer::handle_request(tcp::socket &socket) {
 
   beast::flat_buffer buffer;
   http::request<http::string_body> req;
-  http::read(socket, buffer, req);
+
+  try {
+    http::read(socket, buffer, req);
+  } catch (const std::exception& ex) {
+    std::cerr << "EXCEPTION CAUGHT: " << ex.what() << std::endl;
+  }
 
   if (req.method() == http::verb::get) {
     json j;
@@ -113,7 +118,7 @@ void CommServer::handle_request(tcp::socket &socket) {
                 << " delay: " << params["delay"]
                 << " jitter: " << params["jitter"] << std::endl;
       std::lock_guard<std::mutex> lock(sim.g_start_mutex);
-      sim.update_params(params["ref"], params["delay"], params["jitter"]);
+      sim.update_params(params["ref"], params["delay"], params["jitter"], 0.0); // <-- 0.0 is the radius offset to simulate for 0.0, +0.1 and -0.1
     }
     http::response<http::string_body> res{http::status::ok, req.version()};
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
