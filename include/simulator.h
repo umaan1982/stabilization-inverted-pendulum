@@ -33,6 +33,12 @@ struct SimParams {
       8; ///< Reference angle (0 is vertical, must be between -pi and pi)
   int delay = 0;  ///< Delay in microseconds
   int jitter = 0; ///< Jitter in microseconds
+
+  double ref_angle_rad_offset = 0.1;
+
+  inline double GetRefAngle() const noexcept {
+    return ref_angle  + ref_angle_rad_offset;
+  }
 };
 
 /**
@@ -138,7 +144,7 @@ public:
    * @param jitter Jitter in microseconds for synchronization with the
    * communication server.
    */
-  void update_params(double ref, int delay, int jitter);
+  void update_params(double ref, int delay, int jitter, double ref_rad_offset);
 
   /**
    * @brief Resets the simulator to its initial state.
