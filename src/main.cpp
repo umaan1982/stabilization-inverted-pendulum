@@ -30,17 +30,17 @@
 // simple RAII thread wrapper just to retain authenticity with original, since clang on Mac does not support std::jthread :(
 class JThread {
 public:
-  explicit inline JThread(const auto& func) {
-    m_Thread = std::move(std::thread(func));
+  explicit inline JThread(const auto&&... func) {
+    m_Thread = std::move(std::thread(func...));
   }
 
-  inline void Join(void) {
-    if (!m_DidJoin.exchange(true))
+  inline void TryJoin(void) {
+    if (m_Thread.joinable() && !m_DidWeJoin.exchange(true))
         m_Thread.join();
   }
 
   inline ~JThread() {
-     Join();
+     TryJoin();
   }
 
   inline JThread(const JThread&) = delete;
@@ -50,7 +50,7 @@ public:
 
 private:
    std::thread m_Thread;
-   std::atomic<bool> m_DidJoin{ false };
+   std::atomic<bool> m_DidWeJoin{ false };
 };
 
 int main() {
@@ -58,8 +58,8 @@ int main() {
   Simulator sim;        ///< Simulator object
   CommServer comm(sim); ///< Communication server object with simulator object
 
-  JThread sim_thread([&]() -> void { sim.run_simulator(); });
-  JThread comm_thread([&]() -> void { comm.start_server(); });
+  JThread sim_thread(&Simulator::run_simulator, std::ref(sim));
+  JThread comm_thread(&CommServer::start_server, std::ref(comm));
 
   return 0;
 }
